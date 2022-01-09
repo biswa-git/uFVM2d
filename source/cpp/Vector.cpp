@@ -72,6 +72,20 @@ void Vector::SetDz(const double& z)
     m_c[2] = z;
 }
 
+double Vector::GetDx()
+{
+	return m_c[0];
+}
+
+double Vector::GetDy()
+{
+	return m_c[1];
+}
+double Vector::GetDz()
+{
+	return m_c[2];
+}
+
 double Vector::operator [](const int& i)
 {
 	return m_c[i];

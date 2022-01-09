@@ -35,6 +35,11 @@ TriFace::~TriFace()
 	}
 }
 
+int TriFace::GetId()
+{
+	return m_id;
+}
+
 double TriFace::GetArea()
 {
 	return m_area;
@@ -126,8 +131,8 @@ void TriFace::CalculateArea()
 void TriFace::CalculateCentroid()
 {
     m_centroid = ( m_half_edge[0]->GetStart()->GetPositionVector() +
-                   m_half_edge[0]->GetStart()->GetPositionVector() +
-                   m_half_edge[0]->GetStart()->GetPositionVector() ) / 3.0;
+                   m_half_edge[1]->GetStart()->GetPositionVector() +
+                   m_half_edge[2]->GetStart()->GetPositionVector() ) / 3.0;
 }
 
 std::vector<HalfEdge*>& TriFace::GetHalfEdge()

@@ -12,6 +12,7 @@ source/cpp/Solution.cpp
 source/cpp/Edge.cpp
 source/cpp/Face.cpp
 source/cpp/PhysicalGroup.cpp
+source/cpp/BoundaryCondition.cpp
 )
 TARGET_LINK_LIBRARIES( FVM ${CMAKE_SOURCE_DIR}/lib/lis/lis.lib )
 install(TARGETS FVM DESTINATION ${CMAKE_SOURCE_DIR}/exe)

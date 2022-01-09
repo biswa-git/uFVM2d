@@ -98,7 +98,8 @@ GeometryResult Geometry::Read(const std::string& file_name)
 
                     long int num_of_elements, element_info[5], node_id[3];
                     Vector normal(0, 0, 1);
-
+                    int offset = 0;
+                    bool is_offset = false;
                     getline(file, line);
                     iss.clear();
                     iss.str(line);
@@ -124,6 +125,11 @@ GeometryResult Geometry::Read(const std::string& file_name)
                         if (element_info[1] == PG_INTERIOR)
                         {
                             if (!(iss >> node_id[0] >> node_id[1] >> node_id[2])) { break; }
+                            if (!is_offset)
+                            {
+                                offset = element_info[0];
+                                is_offset = true;
+                            }
                             m_face_list.push_back
                             (
                                 TriFace::New
@@ -131,7 +137,7 @@ GeometryResult Geometry::Read(const std::string& file_name)
                                     m_vertex_list[node_id[0] - 1],
                                     m_vertex_list[node_id[1] - 1],
                                     m_vertex_list[node_id[2] - 1],
-                                    normal, element_info[0]
+                                    normal, element_info[0] - offset
                                 )
                             );
                         }
@@ -198,12 +204,34 @@ GeometryResult Geometry::Write(const std::string& file_location, const std::stri
     return result;
 }
 
-std::vector<Face*>& Geometry::GetFaceList()
+std::vector<Vertex*>& Geometry::GetVertexList()
 {
-    return m_face_list;
+    return m_vertex_list;
 }
 
 std::vector<Edge*>& Geometry::GetEdgeList()
 {
     return m_interior_edge_list;
+}
+std::vector<Face*>& Geometry::GetFaceList()
+{
+    return m_face_list;
+}
+
+std::map<int, PhysicalGroup*> Geometry::GetPhysicalGroup()
+{
+    return m_physical_group;
+}
+
+PhysicalGroup* Geometry::GetPhysicalgroupByName(std::string name)
+{
+    for (auto physical_group : m_physical_group)
+    {
+        if (physical_group.second->GetName() == name)
+        {
+            return physical_group.second;
+        }
+    }
+
+    return nullptr;
 }

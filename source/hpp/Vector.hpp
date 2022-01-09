@@ -17,9 +17,14 @@ public:
     double Abs();
     Vector Unit();
 
-    void SetDx(const double&);
-    void SetDy(const double&);
-    void SetDz(const double&);
+	void SetDx(const double&);
+	void SetDy(const double&);
+	void SetDz(const double&);
+
+	double GetDx();
+	double GetDy();
+	double GetDz();
+
     double Vector::operator [](const int&);
 
     void Reassign(const double&, const double&, const double&);

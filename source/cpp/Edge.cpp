@@ -52,6 +52,11 @@ HalfEdge* Edge::GetHalfEdge(const size_t& index)
 	return m_half_edge[index];
 }
 
+Vector Edge::GetCenter()
+{
+	return (m_start->GetPositionVector() + m_end->GetPositionVector())/2;
+}
+
 void Edge::Legalize(Edge* E)
 {
 }
@@ -69,6 +74,18 @@ HalfEdge* HalfEdge::New(Edge* e, Vertex* v)
 Edge* HalfEdge::GetParentEdge()
 {
 	return m_parent;
+}
+
+HalfEdge* HalfEdge::GetNeighbourHalfEdge()
+{
+	if (this == m_parent->GetHalfEdge(0))
+	{
+		return m_parent->GetHalfEdge(1);
+	}
+	else
+	{
+		return m_parent->GetHalfEdge(0);
+	}
 }
 
 Vertex* HalfEdge::GetStart()

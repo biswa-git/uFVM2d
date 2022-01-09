@@ -17,8 +17,10 @@ public:
     Vertex* GetStart();
     Vertex* GetEnd();
     HalfEdge* GetHalfEdge(const size_t&);
+    Vector GetCenter();
     static void Legalize(Edge*);
     static Vector DistanceVector(Vertex*, Vertex*);
+
 private:
     Edge(Vertex*, Vertex*);
 
@@ -39,6 +41,7 @@ public:
     HalfEdge(HalfEdge const&) = delete;
     HalfEdge& operator=(HalfEdge const&) = delete;
     Edge* GetParentEdge();
+    HalfEdge* GetNeighbourHalfEdge();
     Vertex* GetStart();
     Vertex* GetEnd();
     void SetNext(HalfEdge*);
@@ -48,6 +51,7 @@ public:
     Vector GetEdgeVector();
     Vector GetNormal();
 
+	double mass_flux = 0.0;
 private:
     HalfEdge(Edge*, Vertex*);
     Edge* m_parent;
