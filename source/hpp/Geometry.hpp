@@ -47,8 +47,8 @@ public:
     GeometryResult Read(const std::string& file_name);
     GeometryResult Write(const std::string& file_location, const std::string& file_name);
     std::vector<Vertex*>& GetVertexList();
-    std::vector<Edge*>& GetEdgeList();
-    std::vector<Face*>& GetFaceList();
+    const std::vector<Edge*>& GetEdgeList() const;
+    const std::vector<Face*>& GetFaceList() const;
     std::map<int, PhysicalGroup*> GetPhysicalGroup();
     PhysicalGroup* GetPhysicalgroupByName(std::string name);
 private:

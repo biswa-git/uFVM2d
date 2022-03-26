@@ -209,11 +209,12 @@ std::vector<Vertex*>& Geometry::GetVertexList()
     return m_vertex_list;
 }
 
-std::vector<Edge*>& Geometry::GetEdgeList()
+const std::vector<Edge*>& Geometry::GetEdgeList() const
 {
     return m_interior_edge_list;
 }
-std::vector<Face*>& Geometry::GetFaceList()
+
+const std::vector<Face*>& Geometry::GetFaceList() const
 {
     return m_face_list;
 }

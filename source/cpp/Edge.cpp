@@ -23,6 +23,8 @@ Edge::Edge(Vertex* start, Vertex* end) :m_id(m_count++), m_start(start), m_end(e
 {
 	m_half_edge[0] = HalfEdge::New(this, start);
 	m_half_edge[1] = HalfEdge::New(this, end);
+
+	if(m_id<100) std::cout << m_id << std::endl;
 }
 
 void Edge::Flip()
@@ -30,6 +32,11 @@ void Edge::Flip()
 	Vertex* temp = m_start;
 	m_start = m_end;
 	m_end = temp;
+}
+
+size_t Edge::GetEdgeCount()
+{
+	return m_count;
 }
 
 size_t Edge::GetId()

@@ -13,6 +13,7 @@ public:
     Edge(Edge const&) = delete;
     Edge& operator=(Edge const&) = delete;
     void Flip();
+    size_t GetEdgeCount();
     size_t GetId();
     Vertex* GetStart();
     Vertex* GetEnd();

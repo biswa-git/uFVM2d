@@ -40,19 +40,19 @@ GeometryResult Solution::WriteSolution(const std::string& file_name)
 	myfile << "\n";
 	for (auto it : face_list)
 	{
-		myfile << it->us << "\n";
+		myfile << it->u << "\n";
 	}
 	myfile << "\n";
 
 	for (auto it : face_list)
 	{
-		myfile << it->vs << "\n";
+		myfile << it->v << "\n";
 	}
 	myfile << "\n";
 
 	for (auto it : face_list)
 	{
-		myfile << it->ps << "\n";
+		myfile << it->p << "\n";
 	}
 	myfile << "\n";
 
@@ -94,6 +94,11 @@ void Solution::SetMaxTimeStep(const int& max_timestep)
 	parameter.max_timestep = max_timestep;
 }
 
+Geometry& Solution::GetGeometry()
+{
+	return geometry;
+}
+
 void Solution::SolveMomentum()
 {
 	auto& faces = geometry.GetFaceList();
@@ -101,24 +106,31 @@ void Solution::SolveMomentum()
 	LIS_INT n = faces.size();
 
 	lis_matrix_create(0, &A_us);
+	lis_matrix_create(0, &A_p );
+	lis_matrix_create(0, &A_u );
+
 	lis_vector_create(0, &b_us);
 	lis_vector_create(0, &b_vs);
-	lis_vector_create(0, &x);
-
-	lis_matrix_create(0, &A_p);
-	lis_vector_create(0, &b_p);
+	lis_vector_create(0, &b_u );
+	lis_vector_create(0, &b_v );
+	lis_vector_create(0, &b_p );
+	lis_vector_create(0, &x   );
 
 	lis_matrix_set_size(A_us, 0, n);
+	lis_matrix_set_size(A_p , 0, n); 
+	lis_matrix_set_size(A_u , 0, n);
+
 	lis_vector_set_size(b_us, 0, n);
 	lis_vector_set_size(b_vs, 0, n);
-	lis_vector_set_size(x, 0, n);
-
-	lis_matrix_set_size(A_p, 0, n);
-	lis_vector_set_size(b_p, 0, n);
+	lis_vector_set_size(b_u , 0, n);
+	lis_vector_set_size(b_v , 0, n);
+	lis_vector_set_size(b_p , 0, n);
+	lis_vector_set_size(x   , 0, n);
 
 	lis_solver_create(&solver_momentum);
 	lis_solver_create(&solver_pressure);
 	lis_solver_create(&solver_velocity);
+
 	lis_solver_set_option("-i bicrstab -p ilu", solver_momentum);
 	lis_solver_set_option("-i bicrstab -p ilu", solver_pressure);
 	lis_solver_set_option("-i bicrstab -p ilu", solver_velocity);
@@ -126,7 +138,9 @@ void Solution::SolveMomentum()
 	lis_solver_set_option("-tol 1.0e-12", solver_pressure);
 	lis_solver_set_option("-tol 1.0e-12", solver_velocity);
 	//lis_solver_set_option("-maxiter 10000", solver_momentum);
-	//lis_solver_set_option(const_cast<char*> (("-omp_num_threads " + std::to_string(max_thread-2)).c_str()), solver);
+	//lis_solver_set_option(const_cast<char*> (("-omp_num_threads " + std::to_string(max_thread)).c_str()), solver_momentum);
+	//lis_solver_set_option(const_cast<char*> (("-omp_num_threads " + std::to_string(max_thread)).c_str()), solver_pressure);
+	//lis_solver_set_option(const_cast<char*> (("-omp_num_threads " + std::to_string(max_thread)).c_str()), solver_velocity);
 
 
 	auto physical_groups = geometry.GetPhysicalGroup();
@@ -193,13 +207,15 @@ void Solution::SolveMomentum()
 			}
 		}
 	}
-
-	//end setting A mat
-	//----------------------------------------------------------------------------------------
 	lis_matrix_set_type(A_us, LIS_MATRIX_CSR);
 	lis_matrix_assemble(A_us);
+	
+	//end setting A_us mat
+	//----------------------------------------------------------------------------------------
 
 
+	//setting A_p mat
+	//----------------------------------------------------------------------------------------
 	for (auto face : faces)
 	{
 		auto cell_volume = face->GetArea();
@@ -227,8 +243,103 @@ void Solution::SolveMomentum()
 
 	lis_matrix_set_type(A_p, LIS_MATRIX_CSR);
 	lis_matrix_assemble(A_p);
+	//end setting A_p mat
+	//----------------------------------------------------------------------------------------
 
-	for (int int_iter = 0; int_iter < 10; ++int_iter)
+
+	//setting A_u mat
+//----------------------------------------------------------------------------------------
+	for (auto face : faces)
+	{
+		auto cell_volume = face->GetArea();
+		face->central_term = parameter.density * cell_volume / parameter.dt;
+		auto diagonal_term = 0.0;
+		auto& half_edges = face->GetHalfEdge();
+
+		for (auto half_edge : half_edges)
+		{
+			auto neighbour_half_edge = half_edge->GetNeighbourHalfEdge();
+			auto neighbour_face = neighbour_half_edge->GetFace();
+
+			if (neighbour_face != nullptr)
+			{
+				auto face_area = half_edge->GetEdgeVector().Abs();
+				auto cell_centeroid_distance = (face->GetCentroid() - neighbour_face->GetCentroid()).Abs();
+				auto coefficient = parameter.viscosity * face_area / cell_centeroid_distance;
+				face->central_term += coefficient;
+				face->central_term += (1.0 - parameter.gamma) * std::max(half_edge->mass_flux, 0.0);
+				face->central_term += parameter.gamma * ((half_edge->mass_flux*neighbour_face->GetArea())/
+					                                    (face->GetArea()+ neighbour_face->GetArea()));
+
+				diagonal_term = -coefficient;
+				diagonal_term -= (1.0 - parameter.gamma) * std::max(-half_edge->mass_flux, 0.0);
+				diagonal_term += parameter.gamma * ((half_edge->mass_flux * face->GetArea()) /
+					                               (face->GetArea() + neighbour_face->GetArea()));
+
+				lis_matrix_set_value(LIS_INS_VALUE, face->GetId(), neighbour_face->GetId(), diagonal_term, A_u);
+			}
+		}
+		lis_matrix_set_value(LIS_INS_VALUE, face->GetId(), face->GetId(), face->central_term, A_u);
+	}
+
+	for (auto physical_group : physical_groups)
+	{
+		auto bc = physical_group.second->GetBoundaryCondition();
+		if (bc.GetType() == WALL || bc.GetType() == INFLOW)
+		{
+			auto boundary_edges = physical_group.second->GetEdges();
+			for (auto boundary_edge : boundary_edges)
+			{
+				Face* face = nullptr;
+				HalfEdge* he = nullptr;
+				if (boundary_edge->GetHalfEdge(0)->GetFace() == nullptr)
+				{
+					he = boundary_edge->GetHalfEdge(1);
+					face = he->GetFace();
+				}
+				else
+				{
+					he = boundary_edge->GetHalfEdge(0);
+					face = he->GetFace();
+				}
+
+				auto cell_centeroid_to_wall_distance = abs((boundary_edge->GetCenter() - face->GetCentroid()) * (he->GetNormal()));
+				auto face_area = he->GetEdgeVector().Abs();
+				auto coefficient = parameter.viscosity * face_area / cell_centeroid_to_wall_distance;
+				face->central_term += coefficient;
+				lis_matrix_set_value(LIS_INS_VALUE, face->GetId(), face->GetId(), face->central_term, A_u);
+			}
+		}
+		if (bc.GetType() == OUTFLOW)
+		{
+			auto boundary_edges = physical_group.second->GetEdges();
+			for (auto boundary_edge : boundary_edges)
+			{
+				Face* face = nullptr;
+				HalfEdge* he = nullptr;
+				if (boundary_edge->GetHalfEdge(0)->GetFace() == nullptr)
+				{
+					he = boundary_edge->GetHalfEdge(1);
+					face = he->GetFace();
+				}
+				else
+				{
+					he = boundary_edge->GetHalfEdge(0);
+					face = he->GetFace();
+				}
+				face->central_term += he->mass_flux;
+			}
+		}
+	}
+
+	lis_matrix_set_type(A_u, LIS_MATRIX_CSR);
+	lis_matrix_assemble(A_u);
+
+	//end setting A_u mat
+	//----------------------------------------------------------------------------------------
+;
+
+	for (int int_iter = 0; int_iter < 25; ++int_iter)
 	{
 		std::cout << "iter: " << int_iter << std::endl;
 		//iter part setting b vector
@@ -334,7 +445,7 @@ void Solution::SolveMomentum()
 					right_hand_term_us -= (us_f * half_edge->mass_flux);
 					right_hand_term_vs -= (vs_f * half_edge->mass_flux);
 					lis_vector_set_value(LIS_INS_VALUE, face->GetId(), right_hand_term_us, b_us);
-					lis_vector_set_value(LIS_INS_VALUE, face->GetId(), right_hand_term_us, b_vs);
+					lis_vector_set_value(LIS_INS_VALUE, face->GetId(), right_hand_term_vs, b_vs);
 				}
 			}
 		}
@@ -488,10 +599,173 @@ void Solution::SolveMomentum()
 			auto face_area = half_edge[0]->GetEdgeVector().Abs();
 			auto cell_centeroid_distance = (face[0]->GetCentroid() - face[1]->GetCentroid()).Abs();
 
-			half_edge[0]->mass_flux -= -parameter.dt * face_area * (face[1]->ps - face[0]->ps) / cell_centeroid_distance;
+			half_edge[0]->mass_flux -= parameter.dt * face_area * (face[1]->ps - face[0]->ps) / cell_centeroid_distance;
 			half_edge[1]->mass_flux = -half_edge[0]->mass_flux;
 		}
 	}
 
+	//getting pressure
+	for (auto face : faces)
+	{
+		face->p = face->ps;
+	}
+
+	// setting b_u vector
+	//----------------------------------------
+	for (auto face : faces)
+	{
+		auto cell_volume = face->GetArea();
+		auto right_hand_term_u = face->u * parameter.density * cell_volume / parameter.dt;
+		auto right_hand_term_v = face->v * parameter.density * cell_volume / parameter.dt;
+		auto& half_edges = face->GetHalfEdge();
+
+		for (auto half_edge : half_edges)
+		{
+			auto neighbour_half_edge = half_edge->GetNeighbourHalfEdge();
+			auto neighbour_face = neighbour_half_edge->GetFace();
+
+			if (neighbour_face != nullptr)
+			{
+				auto p_f = (face->p * neighbour_face->GetArea() + neighbour_face->us * face->GetArea()) / (face->GetArea() + neighbour_face->GetArea());
+				
+				right_hand_term_u -= (p_f * half_edge->GetEdgeVector().Abs() * half_edge->GetNormal().GetDx());
+				right_hand_term_v -= (p_f * half_edge->GetEdgeVector().Abs() * half_edge->GetNormal().GetDy());
+			}
+		}
+
+		lis_vector_set_value(LIS_INS_VALUE, face->GetId(), right_hand_term_u, b_u);
+		lis_vector_set_value(LIS_INS_VALUE, face->GetId(), right_hand_term_v, b_v);
+	}
+
+	for (auto physical_group : physical_groups)
+	{
+		auto bc = physical_group.second->GetBoundaryCondition();
+
+		if (bc.GetType() == INFLOW)
+		{
+			double value_u = bc.GetValue();
+			double value_v = 0.0;//workaround
+			auto boundary_edges = physical_group.second->GetEdges();
+			for (auto boundary_edge : boundary_edges)
+			{
+				Face* face = nullptr;
+				HalfEdge* he = nullptr;
+				if (boundary_edge->GetHalfEdge(0)->GetFace() == nullptr)
+				{
+					he = boundary_edge->GetHalfEdge(1);
+					face = he->GetFace();
+				}
+				else
+				{
+					he = boundary_edge->GetHalfEdge(0);
+					face = he->GetFace();
+				}
+
+				auto cell_centeroid_to_wall_distance = abs((boundary_edge->GetCenter() - face->GetCentroid()) * (he->GetNormal()));
+
+				auto face_area = he->GetEdgeVector().Abs();
+
+				double right_hand_term_u;
+				double right_hand_term_v;
+				lis_vector_get_value(b_us, face->GetId(), &right_hand_term_u);
+				lis_vector_get_value(b_vs, face->GetId(), &right_hand_term_v);
+
+				auto p_f = face->p;
+
+				right_hand_term_u -= (p_f * he->GetEdgeVector().Abs() * he->GetNormal().GetDx());
+				right_hand_term_v -= (p_f * he->GetEdgeVector().Abs() * he->GetNormal().GetDy());
+
+				right_hand_term_u += value_u * parameter.viscosity * face_area / cell_centeroid_to_wall_distance;
+				right_hand_term_v += value_v * parameter.viscosity * face_area / cell_centeroid_to_wall_distance;
+
+				right_hand_term_u -= he->mass_flux * value_u;
+				right_hand_term_v -= he->mass_flux * value_v;
+
+				lis_vector_set_value(LIS_INS_VALUE, face->GetId(), right_hand_term_u, b_u);
+				lis_vector_set_value(LIS_INS_VALUE, face->GetId(), right_hand_term_v, b_v);
+			}
+		}
+		if (bc.GetType() == OUTFLOW)
+		{
+			auto boundary_edges = physical_group.second->GetEdges();
+			for (auto boundary_edge : boundary_edges)
+			{
+				Face* face = nullptr;
+				HalfEdge* half_edge = nullptr;
+				if (boundary_edge->GetHalfEdge(0)->GetFace() == nullptr)
+				{
+					half_edge = boundary_edge->GetHalfEdge(1);
+					face = half_edge->GetFace();
+				}
+				else
+				{
+					half_edge = boundary_edge->GetHalfEdge(0);
+					face = half_edge->GetFace();
+				}
+				double right_hand_term_u;
+				double right_hand_term_v;
+				lis_vector_get_value(b_us, face->GetId(), &right_hand_term_u);
+				lis_vector_get_value(b_vs, face->GetId(), &right_hand_term_v);
+
+				auto p_f = face->p;
+
+				right_hand_term_u -= (p_f * half_edge->GetEdgeVector().Abs() * half_edge->GetNormal().GetDx());
+				right_hand_term_v -= (p_f * half_edge->GetEdgeVector().Abs() * half_edge->GetNormal().GetDy());
+
+				lis_vector_set_value(LIS_INS_VALUE, face->GetId(), right_hand_term_u, b_u);
+				lis_vector_set_value(LIS_INS_VALUE, face->GetId(), right_hand_term_v, b_v);
+			}
+		}
+		if (bc.GetType() == WALL)
+		{
+			auto boundary_edges = physical_group.second->GetEdges();
+			for (auto boundary_edge : boundary_edges)
+			{
+				Face* face = nullptr;
+				HalfEdge* half_edge = nullptr;
+				if (boundary_edge->GetHalfEdge(0)->GetFace() == nullptr)
+				{
+					half_edge = boundary_edge->GetHalfEdge(1);
+					face = half_edge->GetFace();
+				}
+				else
+				{
+					half_edge = boundary_edge->GetHalfEdge(0);
+					face = half_edge->GetFace();
+				}
+				double right_hand_term_u;
+				double right_hand_term_v;
+				lis_vector_get_value(b_us, face->GetId(), &right_hand_term_u);
+				lis_vector_get_value(b_vs, face->GetId(), &right_hand_term_v);
+
+				auto p_f = face->p;
+
+				right_hand_term_u -= (p_f * half_edge->GetEdgeVector().Abs() * half_edge->GetNormal().GetDx());
+				right_hand_term_v -= (p_f * half_edge->GetEdgeVector().Abs() * half_edge->GetNormal().GetDy());
+
+				lis_vector_set_value(LIS_INS_VALUE, face->GetId(), right_hand_term_u, b_u);
+				lis_vector_set_value(LIS_INS_VALUE, face->GetId(), right_hand_term_v, b_v);
+			}
+		}
+	}
+
+
+	//solving velocity
+	//----------------------------------------
+	lis_solve(A_u, b_u, x, solver_velocity);
+	for (auto face : faces)
+	{
+		double u_value;
+		lis_vector_get_value(x, face->GetId(), &u_value);
+		face->u = u_value;
+	}
+
+	lis_solve(A_u, b_v, x, solver_velocity);
+	for (auto face : faces)
+	{
+		double v_value;
+		lis_vector_get_value(x, face->GetId(), &v_value);
+		face->v = v_value;
+	}
 
 }

@@ -22,11 +22,12 @@ public:
 	void SetDensity(const double& density);
 	void SetViscosity(const double& viscosity);
 	void SetMaxTimeStep(const int& max_timestep);
+	Geometry& GetGeometry();
 	void SolveMomentum();
 private:
 	Geometry geometry;
 	Parameter parameter;
-	int max_thread=1;
+	int max_thread=8;
 
 	LIS_MATRIX A_us, A_p, A_u;
 	LIS_VECTOR b_us, b_vs, b_p, b_u, b_v, x;
