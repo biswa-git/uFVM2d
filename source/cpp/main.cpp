@@ -27,15 +27,15 @@ int main()
     solution.SetMaxTimeStep(10000);
 
     solution.SolveMomentum();
-    9681
+
     solution.WriteSolution("test");
     */
 
     auto geometry = solution.GetGeometry();
     Data data(geometry);
-    auto& data1 = data.GetEdgeData(MASS_FLUX);
-    data1[0] = 1000;
+    auto& data1 = data.GetFaceData(MASS_FLUX);
     EdgeDataHandler eh(data);
     eh.Update(MASS_FLUX);
     return 0;
+
 }

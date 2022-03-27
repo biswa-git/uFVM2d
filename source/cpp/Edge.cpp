@@ -34,11 +34,6 @@ void Edge::Flip()
 	m_end = temp;
 }
 
-size_t Edge::GetEdgeCount()
-{
-	return m_count;
-}
-
 size_t Edge::GetId()
 {
 	return m_id;
@@ -62,15 +57,6 @@ HalfEdge* Edge::GetHalfEdge(const size_t& index)
 Vector Edge::GetCenter()
 {
 	return (m_start->GetPositionVector() + m_end->GetPositionVector())/2;
-}
-
-void Edge::Legalize(Edge* E)
-{
-}
-
-Vector Edge::DistanceVector(Vertex* start, Vertex* end)
-{
-	return end->GetPositionVector() - start->GetPositionVector();
 }
 
 HalfEdge* HalfEdge::New(Edge* e, Vertex* v)
@@ -139,4 +125,18 @@ Vector HalfEdge::GetNormal()
 
 HalfEdge::HalfEdge(Edge* e, Vertex* v) :m_parent(e), m_start(v), m_next(nullptr), m_associated_Face(nullptr)
 {
+}
+
+size_t Edge::GetEdgeCount()
+{
+	return m_count;
+}
+
+void Edge::Legalize(Edge* E)
+{
+}
+
+Vector Edge::DistanceVector(Vertex* start, Vertex* end)
+{
+	return end->GetPositionVector() - start->GetPositionVector();
 }

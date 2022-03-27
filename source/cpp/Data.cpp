@@ -8,7 +8,7 @@ Data::Data(const Geometry& geometry):m_edge_list(geometry.GetEdgeList()),m_face_
 
 	for (auto& edge_variable_data : m_edge_data)
 	{
-		edge_variable_data.resize(m_edge_list.size());
+		edge_variable_data.resize(Edge::GetEdgeCount());
 	}
 
 	for (auto& face_variable_data : m_face_data)

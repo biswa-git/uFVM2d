@@ -13,12 +13,13 @@ public:
     Edge(Edge const&) = delete;
     Edge& operator=(Edge const&) = delete;
     void Flip();
-    size_t GetEdgeCount();
     size_t GetId();
     Vertex* GetStart();
     Vertex* GetEnd();
     HalfEdge* GetHalfEdge(const size_t&);
     Vector GetCenter();
+
+    static size_t GetEdgeCount();
     static void Legalize(Edge*);
     static Vector DistanceVector(Vertex*, Vertex*);
 
