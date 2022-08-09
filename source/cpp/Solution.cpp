@@ -1,4 +1,7 @@
 #include<Solution.hpp>
+#include<Data.hpp>
+#include<EdgeDataHandler.hpp>
+#include<FaceDataHandler.hpp>
 #include<omp.h>
 Solution::Solution()
 {
@@ -172,7 +175,7 @@ void Solution::SolveMomentum()
 		lis_matrix_set_value(LIS_INS_VALUE, face->GetId(), face->GetId(), face->central_term, A_us);
 	}
 
-	for (auto physical_group : physical_groups)
+	for (auto& physical_group : physical_groups)
 	{
 		auto bc = physical_group.second->GetBoundaryCondition();
 		if (bc.GetType() == WALL || bc.GetType() == INFLOW)
@@ -767,5 +770,135 @@ void Solution::SolveMomentum()
 		lis_vector_get_value(x, face->GetId(), &v_value);
 		face->v = v_value;
 	}
+
+}
+
+void Solution::TestFeature(Data& data)
+{
+	//auto& temperature = data.GetFaceData(TEMPERATURE);
+	EdgeDataHandler edge_handler(data);
+	FaceDataHandler face_handler(data);
+
+	auto& edge_temperature_data = data.GetEdgeData(TEMPERATURE);
+	auto& face_temperature_data = data.GetFaceData(TEMPERATURE);
+	auto& face_temperature_grad_data = data.GetFaceGradData(TEMPERATURE);
+
+	auto physical_groups = geometry.GetPhysicalGroup();
+
+	auto& faces = geometry.GetFaceList();
+	for (auto& face : faces)
+	{
+		auto face_cg = face->GetCentroid();
+		face_temperature_data[face->GetId()] = face_cg[0] * 7.0;
+	}
+
+	edge_handler.Update(TEMPERATURE);
+
+	//BoundaryCondition
+	for (auto physical_group : physical_groups)
+	{
+		auto bc = physical_group.second->GetBoundaryCondition();
+
+		if (bc.GetType() == WALL)
+		{
+			auto boundary_edges = physical_group.second->GetEdges();
+			for (auto boundary_edge : boundary_edges)
+			{
+				auto boundary_edge_id = boundary_edge->GetId();
+				edge_temperature_data[boundary_edge_id] = 0;
+			}
+		}
+
+		if (bc.GetType() == INFLOW)
+		{
+			auto boundary_edges = physical_group.second->GetEdges();
+			for (auto boundary_edge : boundary_edges)
+			{
+				auto boundary_edge_id = boundary_edge->GetId();
+				edge_temperature_data[boundary_edge_id] = 100;
+			}
+		}
+
+		if (bc.GetType() == OUTFLOW)
+		{
+			auto boundary_edges = physical_group.second->GetEdges();
+			for (auto boundary_edge : boundary_edges)
+			{
+				auto boundary_edge_id = boundary_edge->GetId();
+				edge_temperature_data[boundary_edge_id] = 200;
+			}
+		}
+	}
+	face_handler.UpdateGradient(TEMPERATURE);
+
+
+
+
+
+
+
+
+
+
+
+	//------------------------------------------------------------------------
+	auto vertex_list = geometry.GetVertexList();
+	auto face_list = geometry.GetFaceList();
+	std::ofstream myfile;
+	auto file = "temperature.dat";
+	myfile.open(file);
+	myfile << "TITLE = \"title\"\n";
+	myfile << "VARIABLES = \"X\", \"Y\", \"Temperature\", \"TemperatureBack\", \"TemperatureGrad\"\n";
+	myfile << "ZONE N = " << vertex_list.size() << ", E = " << face_list.size() << ", DATAPACKING=BLOCK, ZONETYPE=FETRIANGLE\n";
+	myfile << "VARLOCATION = ([3,4,5] = CELLCENTERED)" << "\n";
+	for (auto it : vertex_list)
+	{
+		auto coord = it->GetPositionVector();
+		myfile << coord[0] << " ";
+	}
+	myfile << "\n";
+	for (auto it : vertex_list)
+	{
+		auto coord = it->GetPositionVector();
+		myfile << coord[1] << "\n";
+	}
+	myfile << "\n";
+	for (auto it : face_list)
+	{
+		auto face_id = it->GetId();
+		myfile << face_temperature_data[face_id] << "\n";
+	}
+	myfile << "\n";
+	for (auto it : face_list)
+	{
+		auto face_id = it->GetId();
+		auto half_edges = it->GetHalfEdge();
+		double temperature = 0;
+		for (auto& half_edge : half_edges)
+		{
+			auto edge_id = half_edge->GetParentEdge()->GetId();
+			temperature += edge_temperature_data[edge_id] / 3.0;
+		}
+		myfile << temperature << "\n";
+	}
+	myfile << "\n";
+	for (auto it : face_list)
+	{
+		auto face_id = it->GetId();
+		myfile << face_temperature_grad_data[face_id][0] << "\n";
+	}
+	myfile << "\n";
+
+	for (auto it : face_list)
+	{
+		myfile << it->GetHalfEdge()[0]->GetStart()->GetId() << " " << it->GetHalfEdge()[1]->GetStart()->GetId() << " " << it->GetHalfEdge()[2]->GetStart()->GetId() << "\n";
+	}
+
+	myfile.close();
+	//------------------------------------------------------------------------
+}
+
+void Solution::PoissonSolver()
+{
 
 }

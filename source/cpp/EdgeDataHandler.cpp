@@ -1,6 +1,6 @@
 #include<EdgeDataHandler.hpp>
 
-EdgeDataHandler::EdgeDataHandler(const Data& data): m_data(data)
+EdgeDataHandler::EdgeDataHandler(Data& data): m_data(&data)
 {
 	m_edge_list = data.GetEdgeList();
 }
@@ -11,8 +11,8 @@ EdgeDataHandler::~EdgeDataHandler()
 
 void EdgeDataHandler::Update(const int& data_id)
 {
-	auto& edge_data = m_data.GetEdgeData(data_id);
-	auto& face_data = m_data.GetFaceData(data_id);
+	auto& edge_data = m_data->GetEdgeData(data_id);
+	auto& face_data = m_data->GetFaceData(data_id);
 
 	std::vector<Face*> face(2, nullptr);
 

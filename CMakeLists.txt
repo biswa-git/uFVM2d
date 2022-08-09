@@ -20,6 +20,7 @@ source/cpp/BoundaryCondition.cpp
 source/cpp/EdgeDataHandler.cpp
 source/cpp/FaceDataHandler.cpp
 source/cpp/Data.cpp
+source/cpp/PoissonSolver.cpp
 )
 
 TARGET_LINK_LIBRARIES( FVM PUBLIC OpenMP::OpenMP_CXX ${CMAKE_SOURCE_DIR}/lib/lis/lis.lib)

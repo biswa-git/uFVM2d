@@ -1,5 +1,6 @@
 #pragma once
 #include<Geometry.hpp>
+#include<Data.hpp>
 #include <lis.h>
 struct Parameter
 {
@@ -24,6 +25,8 @@ public:
 	void SetMaxTimeStep(const int& max_timestep);
 	Geometry& GetGeometry();
 	void SolveMomentum();
+	void TestFeature(Data& data);
+	void PoissonSolver();
 private:
 	Geometry geometry;
 	Parameter parameter;
