@@ -19,12 +19,10 @@ Edge::~Edge()
 	delete m_half_edge[1];
 }
 
-Edge::Edge(Vertex* start, Vertex* end) :m_id(m_count++), m_start(start), m_end(end)
+Edge::Edge(Vertex* start, Vertex* end) :m_id(m_count++), m_start(start), m_end(end), m_area_by_distance(0.0)
 {
 	m_half_edge[0] = HalfEdge::New(this, start);
 	m_half_edge[1] = HalfEdge::New(this, end);
-
-	if(m_id<100) std::cout << m_id << std::endl;
 }
 
 void Edge::Flip()
@@ -57,6 +55,11 @@ HalfEdge* Edge::GetHalfEdge(const size_t& index)
 Vector Edge::GetCenter()
 {
 	return (m_start->GetPositionVector() + m_end->GetPositionVector())/2;
+}
+
+double& Edge::GetEdgeData(const int& data_id)
+{
+	return m_edge_data.GetEdgeData(data_id);
 }
 
 HalfEdge* HalfEdge::New(Edge* e, Vertex* v)
@@ -123,7 +126,23 @@ Vector HalfEdge::GetNormal()
 	return  GetEdgeVector().Unit() ^ GetFace()->GetNormalVector().Unit();
 }
 
-HalfEdge::HalfEdge(Edge* e, Vertex* v) :m_parent(e), m_start(v), m_next(nullptr), m_associated_Face(nullptr)
+Vector& HalfEdge::GeAreaVector()
+{
+	return m_area_vector;
+}
+
+void HalfEdge::SetDirectionCoefficient(const int& d)
+{
+	m_direction_coefficient = d;
+}
+
+int HalfEdge::GDirectionCoefficient()
+{
+	return m_direction_coefficient;
+}
+
+
+HalfEdge::HalfEdge(Edge* e, Vertex* v) :m_parent(e), m_start(v), m_next(nullptr), m_associated_Face(nullptr), m_direction_coefficient(0)
 {
 }
 
@@ -139,4 +158,15 @@ void Edge::Legalize(Edge* E)
 Vector Edge::DistanceVector(Vertex* start, Vertex* end)
 {
 	return end->GetPositionVector() - start->GetPositionVector();
+}
+
+
+void Edge::SetAreaByDistance(const double& a_d)
+{
+	m_area_by_distance = a_d;
+}
+
+double Edge::GetAreaByDistance()
+{
+	return m_area_by_distance;
 }

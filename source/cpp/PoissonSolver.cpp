@@ -1,7 +1,7 @@
 #pragma once
 #include<PoissonSolver.hpp>
 
-
+/*
 PoissonSolver::PoissonSolver(Geometry& geometry): m_geometry(&geometry)
 {
 	auto& faces = geometry.GetFaceList();
@@ -78,20 +78,65 @@ PoissonSolver::PoissonSolver(Geometry& geometry): m_geometry(&geometry)
 		}
 	}
 
-
 	lis_matrix_set_type(A, LIS_MATRIX_CSR);
 	lis_matrix_assemble(A);
 
 	lis_solve(A, b, x, solver);
 
+}
+*/
 
+PoissonSolver::PoissonSolver()
+{
+	lis_solver_create(&m_solver);
+	lis_solver_set_option("-i bicgstab -p ilut", m_solver);
+	lis_solver_set_option("-tol 1.0e-15", m_solver);
 }
 
 PoissonSolver::~PoissonSolver()
 {
+	lis_solver_destroy(m_solver);
+	lis_matrix_destroy(m_A);
+	lis_vector_destroy(m_b);
+	lis_vector_destroy(m_x);
+}
+
+
+void PoissonSolver::SetSize(const LIS_INT& size)
+{
+	m_size = size;
+
+	lis_matrix_create(0, &m_A);
+	lis_matrix_set_size(m_A, 0, m_size);
+
+	lis_vector_create(0, &m_b);
+	lis_vector_set_size(m_b, 0, m_size);
+	lis_vector_create(0, &m_x);
+	lis_vector_set_size(m_x, 0, m_size);
+}
+
+void PoissonSolver::MatrixSetValue(const int& i, const int& j, const double& value)
+{
+	lis_matrix_set_value(LIS_INS_VALUE, i, j, value, m_A);
+}
+
+void PoissonSolver::BVectorSetValue(const int& i, const double& value)
+{
+	lis_vector_set_value(LIS_INS_VALUE, i, value, m_b);
+}
+
+void PoissonSolver::XVectorSetValue(const int& i, const double& value)
+{
+	lis_vector_set_value(LIS_INS_VALUE, i, value, m_x);
+}
+
+void PoissonSolver::Prepare()
+{
+	lis_matrix_set_type(m_A, LIS_MATRIX_CSR);
+	lis_matrix_assemble(m_A);
 }
 
 LIS_VECTOR& PoissonSolver::GetResult()
 {
-	return x;
+	return m_x;
 }

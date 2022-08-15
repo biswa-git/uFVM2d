@@ -5,7 +5,6 @@
 #include<iostream>
 #include<chrono>
 #include<lis.h>
-#include<EdgeDataHandler.hpp>
 #include<PoissonSolver.hpp>
 
 int main()
@@ -17,10 +16,10 @@ int main()
     Solution solution;
     solution.ReadGeometry(file_location + file_name);
     
-    solution.SetBoundaryCondition("inlet", INFLOW, 250.0);
-	solution.SetBoundaryCondition("outlet", INFLOW, 500.0);
-	solution.SetBoundaryCondition("wall", INFLOW, 250.0);
-	solution.SetBoundaryCondition("cylinder", INFLOW, 1000.0);
+    solution.SetBoundaryCondition("inlet", INFLOW, 1.0);
+	solution.SetBoundaryCondition("outlet", OUTFLOW);
+	solution.SetBoundaryCondition("wall", WALL);
+	solution.SetBoundaryCondition("cylinder", WALL);
     /*
     solution.SetTimeStep(0.01);
     solution.SetDensity(1);
@@ -30,25 +29,20 @@ int main()
     solution.SolveMomentum();
 
     solution.WriteSolution("test");
-    */
+	*/
 
-    auto geometry = solution.GetGeometry();
-    Data data(geometry);
-    //auto& data1 = data.GetFaceData(MASS_FLUX);
-    //EdgeDataHandler eh(data);
-    //eh.Update(MASS_FLUX);
-    //solution.TestFeature(data);
-
-    PoissonSolver solver(geometry);
+    //auto geometry = solution.GetGeometry();
+	//solution.TestFeature();
+	solution.Solve();
+    /*PoissonSolver solver(geometry);
     auto& x = solver.GetResult();
 
     auto& faces = geometry.GetFaceList();
-    auto face_temperature_data = data.GetFaceData(TEMPERATURE);
     double value;
     for (auto face : faces)
     {
         lis_vector_get_value(x, face->GetId(), &value);
-        face_temperature_data[face->GetId()] = value;
+        face->GetFaceData(F_TEMPERATURE) = value;
     }
 
 	//------------------------------------------------------------------------
@@ -75,8 +69,7 @@ int main()
 	myfile << "\n";
 	for (auto it : face_list)
 	{
-		auto face_id = it->GetId();
-		myfile << face_temperature_data[face_id] << "\n";
+		myfile << it->GetFaceData(F_TEMPERATURE) << "\n";
 	}
 	myfile << "\n";
 
@@ -87,7 +80,7 @@ int main()
 
 	myfile.close();
 	//------------------------------------------------------------------------
-
+	*/
     return 0;
 
 }

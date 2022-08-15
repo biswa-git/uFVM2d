@@ -6,14 +6,19 @@
 class PoissonSolver
 {
 public:
-	PoissonSolver(Geometry& geometry);
+	PoissonSolver();
+	void SetSize(const LIS_INT& size);
 	LIS_VECTOR& GetResult();
+	void MatrixSetValue(const int& i, const int& j, const double& value);
+	void BVectorSetValue(const int& i, const double& value);
+	void XVectorSetValue(const int& i, const double& value);
+	void Prepare();
 	~PoissonSolver();
 
 private:
-	Geometry* m_geometry;
-	LIS_MATRIX A;
-	LIS_VECTOR x;
-	LIS_VECTOR b;
-	LIS_SOLVER solver;
+	LIS_INT m_size;
+	LIS_MATRIX m_A;
+	LIS_VECTOR m_x;
+	LIS_VECTOR m_b;
+	LIS_SOLVER m_solver;
 };

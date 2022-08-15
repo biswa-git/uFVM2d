@@ -164,8 +164,56 @@ GeometryResult Geometry::Read(const std::string& file_name)
 
         for (auto edge: interior_edge)
         {
+            edge->GetHalfEdge(0)->SetDirectionCoefficient( 1);
+            edge->GetHalfEdge(1)->SetDirectionCoefficient(-1);
+
+            edge->GetHalfEdge(0)->GeAreaVector().Reassign(
+                edge->GetHalfEdge(0)->GetEdgeVector().Abs()* edge->GetHalfEdge(0)->GetNormal().GetDx(),
+                edge->GetHalfEdge(0)->GetEdgeVector().Abs()* edge->GetHalfEdge(0)->GetNormal().GetDy(),
+                0
+            );
+
+            //can be avoided by reverting dir
+            edge->GetHalfEdge(1)->GeAreaVector().Reassign(
+                edge->GetHalfEdge(1)->GetEdgeVector().Abs()* edge->GetHalfEdge(1)->GetNormal().GetDx(),
+                edge->GetHalfEdge(1)->GetEdgeVector().Abs()* edge->GetHalfEdge(1)->GetNormal().GetDy(),
+                0
+            );
+
+            auto face_area = edge->GetHalfEdge(0)->GetEdgeVector().Abs();
+            auto cell_centeroid_distance = (edge->GetHalfEdge(0)->GetFace()->GetCentroid() - edge->GetHalfEdge(1)->GetFace()->GetCentroid()).Abs();
+            edge->SetAreaByDistance(face_area / cell_centeroid_distance);
+
             m_interior_edge_list.push_back(edge);
+
         }
+        for (auto& physical_group : m_physical_group)
+        {
+            auto& boundary_edges = physical_group.second->GetEdges();
+            for (auto boundary_edge : boundary_edges)
+            {
+                HalfEdge* half_edge = nullptr;
+                if (boundary_edge->GetHalfEdge(0)->GetFace() == nullptr)
+                {
+                    half_edge = boundary_edge->GetHalfEdge(1);
+                }
+                else
+                {
+                    half_edge = boundary_edge->GetHalfEdge(0);
+                }
+
+                half_edge->GeAreaVector().Reassign(
+                    half_edge->GetEdgeVector().Abs()* half_edge->GetNormal().GetDx(),
+                    half_edge->GetEdgeVector().Abs()* half_edge->GetNormal().GetDy(),
+                    0
+                );
+
+                auto face_area = half_edge->GetEdgeVector().Abs();
+                auto cell_centeroid_to_wall_distance = abs((boundary_edge->GetCenter() - half_edge->GetFace()->GetCentroid()) * (half_edge->GetNormal()));
+                half_edge->GetParentEdge()->SetAreaByDistance(face_area / cell_centeroid_to_wall_distance);
+            }
+        }
+
 
     }
     else
@@ -219,7 +267,7 @@ const std::vector<Face*>& Geometry::GetFaceList() const
     return m_face_list;
 }
 
-std::map<int, PhysicalGroup*> Geometry::GetPhysicalGroup()
+std::map<int, PhysicalGroup*>& Geometry::GetPhysicalGroup()
 {
     return m_physical_group;
 }

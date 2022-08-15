@@ -149,3 +149,13 @@ std::vector<Vector> TriFace::GetVerticesVector()
 	}
 	return result;
 }
+
+double& Face::GetFaceData(const int& data_id)
+{
+	return m_face_data.GetFaceData(data_id);
+}
+
+std::vector<double>& Face::GetFaceGradData(const int& data_id)
+{
+	return m_face_grad_data.GetFaceGradData(data_id);
+}

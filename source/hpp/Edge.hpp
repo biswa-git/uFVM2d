@@ -2,6 +2,7 @@
 #include <Vector.hpp>
 #include <Vertex.hpp>
 #include <Face.hpp>
+#include <Data.hpp>
 
 class HalfEdge;
 class Face;
@@ -19,9 +20,13 @@ public:
     HalfEdge* GetHalfEdge(const size_t&);
     Vector GetCenter();
 
+    double& GetEdgeData(const int&);
+
     static size_t GetEdgeCount();
     static void Legalize(Edge*);
     static Vector DistanceVector(Vertex*, Vertex*);
+    void SetAreaByDistance(const double&);
+    double GetAreaByDistance();
 
 private:
     Edge(Vertex*, Vertex*);
@@ -33,6 +38,9 @@ private:
     Vertex* m_end;
 
     HalfEdge* m_half_edge[2];
+
+    double m_area_by_distance;
+    EdgeData m_edge_data;
 };
 
 class HalfEdge
@@ -52,12 +60,16 @@ public:
     Face* GetFace();
     Vector GetEdgeVector();
     Vector GetNormal();
+    Vector& GeAreaVector();
+    void SetDirectionCoefficient(const int&);
+    int GDirectionCoefficient();
 
-	double mass_flux = 0.0;
 private:
     HalfEdge(Edge*, Vertex*);
     Edge* m_parent;
     Vertex* m_start;
     Face* m_associated_Face;
     HalfEdge* m_next;
+    Vector m_area_vector;
+    int m_direction_coefficient;
 };

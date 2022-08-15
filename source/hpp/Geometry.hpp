@@ -2,7 +2,6 @@
 
 #include<Face.hpp>
 #include<PhysicalGroup.hpp>
-
 #include<string>
 #include<set>
 #include <algorithm>
@@ -49,7 +48,7 @@ public:
     std::vector<Vertex*>& GetVertexList();
     const std::vector<Edge*>& GetEdgeList() const;
     const std::vector<Face*>& GetFaceList() const;
-    std::map<int, PhysicalGroup*> GetPhysicalGroup();
+    std::map<int, PhysicalGroup*>& GetPhysicalGroup();
     PhysicalGroup* GetPhysicalgroupByName(std::string name);
 private:
     bool m_is_read;
@@ -58,7 +57,6 @@ private:
     std::vector<Face*> m_face_list;
     std::vector<Edge*> m_interior_edge_list;
     std::map<int, PhysicalGroup*> m_physical_group;
-    //std::map<>
 
 private:
     GeometryResult CalculateBoundingBox();

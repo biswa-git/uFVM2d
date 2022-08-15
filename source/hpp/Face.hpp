@@ -1,8 +1,10 @@
 #pragma once
 #include<Edge.hpp>
+#include <Data.hpp>
 #include<vector>
 
 class HalfEdge;
+
 class Face
 {
 public:
@@ -17,10 +19,9 @@ public:
     virtual void SetOrphanedEdgeRemoveFlag(bool);
     virtual std::vector<HalfEdge*>& GetHalfEdge() = 0;
     virtual std::vector<Vector> GetVerticesVector() = 0;
+    double& Face::GetFaceData(const int& data_id);
+    std::vector<double>& Face::GetFaceGradData(const int& data_id);
 
-    //as of now it is being done in very naive way :(
-    double p = 0, u = 0, v = 0, w = 0, ps = 0, us = 0, vs = 0, ws = 0;
-    double central_term = 0;
 protected:
     virtual void CalculateArea() = 0;
     static size_t m_count;
@@ -29,6 +30,9 @@ protected:
     Vector m_centroid;
     bool m_is_orphaned_edge_remove_flag;
     std::vector<HalfEdge*> m_half_edge;
+
+    FaceData m_face_data;
+    FaceGradData m_face_grad_data;
     
 
 };

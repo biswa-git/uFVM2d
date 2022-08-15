@@ -17,8 +17,8 @@ source/cpp/Edge.cpp
 source/cpp/Face.cpp
 source/cpp/PhysicalGroup.cpp
 source/cpp/BoundaryCondition.cpp
-source/cpp/EdgeDataHandler.cpp
-source/cpp/FaceDataHandler.cpp
+#source/cpp/EdgeDataHandler.cpp
+#source/cpp/FaceDataHandler.cpp
 source/cpp/Data.cpp
 source/cpp/PoissonSolver.cpp
 )

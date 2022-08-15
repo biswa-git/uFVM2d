@@ -1,7 +1,11 @@
 #pragma once
 #include<Geometry.hpp>
 #include<Data.hpp>
+#include<PoissonSolver.hpp>
 #include <lis.h>
+#include<omp.h>
+#include <unordered_map>
+
 struct Parameter
 {
 	double dt = 0.0;
@@ -24,16 +28,28 @@ public:
 	void SetViscosity(const double& viscosity);
 	void SetMaxTimeStep(const int& max_timestep);
 	Geometry& GetGeometry();
-	void SolveMomentum();
-	void TestFeature(Data& data);
-	void PoissonSolver();
+	void TestFeature();
+	void UpdateEdgeData(const int& data_id);
+	void UpdateFaceGradient(const int& data_id);
+	void UpdateFlux(const int& vel_x_data_id, const int& vel_y_data_id, const int& flux_data_id);
+	void CopyEdgeData(const int& source, const int& destination);
+	void CopyFaceData(const int& source, const int& destination);
+	void CopyFaceGradData(const int& source, const int& destination);
+	void SetEdgeData(const int& data_id, const int& value);
+	void SetFaceData(const int& data_id, const int& value);
+
+
+	void Solve();
+	void ConstructMomentumMatrix();
 private:
-	Geometry geometry;
-	Parameter parameter;
-	int max_thread=8;
+	Geometry m_geometry;
+	Parameter m_parameter;
+	int m_max_thread = std::max(omp_get_max_threads()/2,1);
 
-	LIS_MATRIX A_us, A_p, A_u;
-	LIS_VECTOR b_us, b_vs, b_p, b_u, b_v, x;
+	std::unordered_map<int, int> m_edge_face_map;
+	std::unordered_map<int, int> m_face_edge_map;
+	std::unordered_map<int, int> m_face_grad_edge_map;
 
-	LIS_SOLVER solver_momentum, solver_pressure, solver_velocity;
+	PoissonSolver m_momentum;
+	PoissonSolver m_pressure;
 };

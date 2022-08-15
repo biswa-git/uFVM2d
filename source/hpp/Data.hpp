@@ -1,63 +1,65 @@
 #pragma once 
-#include<Geometry.hpp>
 #include<map>
-
-enum SolutionData
+#include<vector>
+enum FaceDataEnum
 {
-	MASS_FLUX,
-	MASS_FLUX_STAR,
-	U,
-	U_S,
-	V,
-	V_S,
-	TEMPERATURE,
-	DATA_COUNT
-};
-
-enum FaceData
-{
-	U,
-	U_S,
-	V,
-	V_S,
-	TEMPERATURE,
+	F_VEL_X,
+	F_VEL_Y,
+	F_VEL_XS,
+	F_VEL_YS,
+	F_PRESSURE,
+	F_TEMPERATURE,
+	F_CENTRAL_TERM,
 	FACE_DATA_COUNT
 };
 
-enum EdgeData
+enum EdgeDataEnum
 {
-	MASS_FLUX,
-	MASS_FLUX_STAR,
-	U,
-	U_S,
-	V,
-	V_S,
-	TEMPERATURE,
+	E_MASS_FLUX,
+	E_MASS_FLUX_S,
+	E_VEL_X,
+	E_VEL_Y,
+	E_VEL_XS,
+	E_VEL_YS,
+	E_TEMPERATURE,
 	EDGE_DATA_COUNT
 };
 
-enum FaceGradData
+enum FaceGradDataEnum
 {
-	PRESSURE,
-	TEMPERATURE,
-	GRAD_DATA_COUNT
+	FG_TEMPERATURE,
+	FACE_GRAD_DATA_COUNT
 };
 
-class Data
+class EdgeData
 {
 public:
-	Data(const Geometry&);
-	~Data();
-	const std::vector<Edge*>& GetEdgeList() const;
-	const std::vector<Face*>& GetFaceList() const;
-	std::vector<double>& GetEdgeData(const int&);
-	std::vector<double>& GetFaceData(const int&);
-	std::vector<std::vector<double>>& GetFaceGradData(const int&);
+	EdgeData();
+	~EdgeData();
+	double& GetEdgeData(const int&);
 
 private:
-	std::vector<Edge*> m_edge_list;
-	std::vector<Face*> m_face_list;
-	std::vector<std::vector<double>> m_edge_data;
-	std::vector<std::vector<double>> m_face_data;
-	std::vector<std::vector<std::vector<double>>> m_face_grad_data;
+	std::vector<double> m_edge_data;
+};
+
+class FaceData
+{
+public:
+	FaceData();
+	~FaceData();
+	double& GetFaceData(const int&);
+
+private:
+	std::vector<double> m_face_data;
+};
+
+class FaceGradData
+{
+public:
+	FaceGradData();
+	~FaceGradData();
+	std::vector<double>& GetFaceGradData(const int&);
+
+private:
+	std::vector<std::vector<double>> m_face_grad_data;
 };
