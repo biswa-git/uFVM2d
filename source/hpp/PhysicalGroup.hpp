@@ -16,15 +16,16 @@ public:
     void SetBoundaryCondition(const BoundaryCondition& boundary_condition);
     BoundaryCondition PhysicalGroup::GetBoundaryCondition();
     std::string GetName();
-    void AddEdges(Edge*);
+    void AddEdgeFaceMap(const std::pair<Edge*, Face*>&);
     void AddFaces(Face*);
-    std::vector<Edge*>& GetEdges();
+    std::vector<std::pair<Edge*, Face*>>& GetEdgeFace();
+
 private:
     PhysicalGroup(const int&, const std::string&);
 
     int m_type;
     BoundaryCondition m_boundary_condition;
     std::string m_name;
-    std::vector<Edge*> m_associated_edges;
+    std::vector<std::pair<Edge*, Face*>> m_associated_edges_faces;
     std::vector<Face*> m_associated_faces;
 };

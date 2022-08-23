@@ -60,9 +60,9 @@ public:
     Face* GetFace();
     Vector GetEdgeVector();
     Vector GetNormal();
-    Vector& GeAreaVector();
+    Vector& GetAreaVector();
     void SetDirectionCoefficient(const int&);
-    int GDirectionCoefficient();
+    int GetDirectionCoefficient();
 
 private:
     HalfEdge(Edge*, Vertex*);

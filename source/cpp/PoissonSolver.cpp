@@ -105,6 +105,7 @@ PoissonSolver::~PoissonSolver()
 void PoissonSolver::SetSize(const LIS_INT& size)
 {
 	m_size = size;
+	m_temp_b_vector.resize(m_size);
 
 	lis_matrix_create(0, &m_A);
 	lis_matrix_set_size(m_A, 0, m_size);
@@ -122,7 +123,12 @@ void PoissonSolver::MatrixSetValue(const int& i, const int& j, const double& val
 
 void PoissonSolver::BVectorSetValue(const int& i, const double& value)
 {
-	lis_vector_set_value(LIS_INS_VALUE, i, value, m_b);
+	m_temp_b_vector[i] = value;
+}
+
+double PoissonSolver::BVectorGetValue(const int& i)
+{
+	return m_temp_b_vector[i];
 }
 
 void PoissonSolver::XVectorSetValue(const int& i, const double& value)
@@ -130,13 +136,21 @@ void PoissonSolver::XVectorSetValue(const int& i, const double& value)
 	lis_vector_set_value(LIS_INS_VALUE, i, value, m_x);
 }
 
-void PoissonSolver::Prepare()
+void PoissonSolver::PrepareMatrix()
 {
 	lis_matrix_set_type(m_A, LIS_MATRIX_CSR);
 	lis_matrix_assemble(m_A);
 }
 
+void PoissonSolver::PrepareBVector()
+{
+	for (int i = 0; i < m_size; ++i)
+	{
+		lis_vector_set_value(LIS_INS_VALUE, i, m_temp_b_vector[i], m_b);
+	}
+}
 LIS_VECTOR& PoissonSolver::GetResult()
 {
+	lis_solve(m_A, m_b, m_x, m_solver);
 	return m_x;
 }

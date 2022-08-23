@@ -26,17 +26,17 @@ std::string PhysicalGroup::GetName()
 {
     return m_name;
 }
-void PhysicalGroup::AddEdges(Edge* e)
+void PhysicalGroup::AddEdgeFaceMap(const std::pair<Edge*, Face*>& edge_face_map)
 {
-    m_associated_edges.push_back(e);
+    m_associated_edges_faces.emplace_back(edge_face_map);
 }
 
 void PhysicalGroup::AddFaces(Face* f)
 {
-    m_associated_faces.push_back(f);
+    m_associated_faces.emplace_back(f);
 }
 
-std::vector<Edge*>& PhysicalGroup::GetEdges()
+std::vector<std::pair<Edge*, Face*>>& PhysicalGroup::GetEdgeFace()
 {
-    return m_associated_edges;
+    return m_associated_edges_faces;
 }

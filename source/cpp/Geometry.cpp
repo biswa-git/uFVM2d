@@ -28,7 +28,7 @@ Geometry::~Geometry()
 GeometryResult Geometry::Read(const std::string& file_name)
 {
     GeometryResult result;
-
+    std::map<int, std::vector<Edge*>> physical_group_edges_map;
     if (!m_is_read)
     {
         std::ifstream file(file_name);
@@ -96,7 +96,7 @@ GeometryResult Geometry::Read(const std::string& file_name)
                 if (line == "$Elements")
                 {
 
-                    long int num_of_elements, element_info[5], node_id[3];
+                    size_t num_of_elements, element_info[5], node_id[3];
                     Vector normal(0, 0, 1);
                     int offset = 0;
                     bool is_offset = false;
@@ -119,7 +119,8 @@ GeometryResult Geometry::Read(const std::string& file_name)
                         if (element_info[1] == PG_BOUNDARY)
                         {
                             if (!(iss >> node_id[0] >> node_id[1])) { break; };
-                            m_physical_group[element_info[3]]->AddEdges(Edge::New(m_vertex_list[node_id[0] - 1], m_vertex_list[node_id[1] - 1]));
+                            auto edge = Edge::New(m_vertex_list[node_id[0] - 1], m_vertex_list[node_id[1] - 1]);
+                            physical_group_edges_map[element_info[3]].emplace_back(edge);
                         }
                         
                         if (element_info[1] == PG_INTERIOR)
@@ -167,14 +168,14 @@ GeometryResult Geometry::Read(const std::string& file_name)
             edge->GetHalfEdge(0)->SetDirectionCoefficient( 1);
             edge->GetHalfEdge(1)->SetDirectionCoefficient(-1);
 
-            edge->GetHalfEdge(0)->GeAreaVector().Reassign(
+            edge->GetHalfEdge(0)->GetAreaVector().Reassign(
                 edge->GetHalfEdge(0)->GetEdgeVector().Abs()* edge->GetHalfEdge(0)->GetNormal().GetDx(),
                 edge->GetHalfEdge(0)->GetEdgeVector().Abs()* edge->GetHalfEdge(0)->GetNormal().GetDy(),
                 0
             );
 
             //can be avoided by reverting dir
-            edge->GetHalfEdge(1)->GeAreaVector().Reassign(
+            edge->GetHalfEdge(1)->GetAreaVector().Reassign(
                 edge->GetHalfEdge(1)->GetEdgeVector().Abs()* edge->GetHalfEdge(1)->GetNormal().GetDx(),
                 edge->GetHalfEdge(1)->GetEdgeVector().Abs()* edge->GetHalfEdge(1)->GetNormal().GetDy(),
                 0
@@ -187,10 +188,10 @@ GeometryResult Geometry::Read(const std::string& file_name)
             m_interior_edge_list.push_back(edge);
 
         }
-        for (auto& physical_group : m_physical_group)
+        for (auto& physical_group_edges : physical_group_edges_map)
         {
-            auto& boundary_edges = physical_group.second->GetEdges();
-            for (auto boundary_edge : boundary_edges)
+            auto& boundary_edges = physical_group_edges.second;
+            for (auto& boundary_edge : boundary_edges)
             {
                 HalfEdge* half_edge = nullptr;
                 if (boundary_edge->GetHalfEdge(0)->GetFace() == nullptr)
@@ -202,7 +203,10 @@ GeometryResult Geometry::Read(const std::string& file_name)
                     half_edge = boundary_edge->GetHalfEdge(0);
                 }
 
-                half_edge->GeAreaVector().Reassign(
+                std::pair < Edge*, Face*> edge_face_pair(boundary_edge, half_edge->GetFace());
+                m_physical_group[physical_group_edges.first]->AddEdgeFaceMap(edge_face_pair);
+
+                half_edge->GetAreaVector().Reassign(
                     half_edge->GetEdgeVector().Abs()* half_edge->GetNormal().GetDx(),
                     half_edge->GetEdgeVector().Abs()* half_edge->GetNormal().GetDy(),
                     0

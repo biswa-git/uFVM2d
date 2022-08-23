@@ -46,25 +46,19 @@ GeometryResult Solution::WriteSolution(const std::string& file_name)
 	myfile << "\n";
 	for (auto it : face_list)
 	{
-		//myfile << it->GetFaceData(F_VEL_X) << "\n";
-		double val = 0.0;
-		for (auto edge : it->GetHalfEdge())
-		{
-			val += edge->GetParentEdge()->GetEdgeData(E_MASS_FLUX);
-		}
-		myfile << val << "\n";
+		myfile << it->GetFaceData(F_VEL_XS) << "\n";
 	}
 	myfile << "\n";
 
 	for (auto it : face_list)
 	{
-		myfile << it->GetFaceData(F_VEL_Y) << "\n";
+		myfile << it->GetFaceData(F_VEL_YS) << "\n";
 	}
 	myfile << "\n";
 
 	for (auto it : face_list)
 	{
-		myfile << it->GetFaceData(F_PRESSURE) << "\n";
+		myfile << it->GetFaceData(F_PRESSURE_S) << "\n";
 	}
 	myfile << "\n";
 
@@ -805,31 +799,28 @@ void Solution::TestFeature()
 
 		if (boundary_condition.GetType() == WALL)
 		{
-			auto& boundary_edges = physical_group.second->GetEdges();
-			for (auto boundary_edge : boundary_edges)
+			auto& boundary_edge_face_pairs = physical_group.second->GetEdgeFace();
+			for (auto& boundary_edge_face_pair : boundary_edge_face_pairs)
 			{
-				auto boundary_edge_id = boundary_edge->GetId();
-				boundary_edge->GetEdgeData(E_TEMPERATURE) = 0;
+				boundary_edge_face_pair.first->GetEdgeData(E_TEMPERATURE) = 0;
 			}
 		}
 
 		if (boundary_condition.GetType() == INFLOW)
 		{
-			auto boundary_edges = physical_group.second->GetEdges();
-			for (auto boundary_edge : boundary_edges)
+			auto& boundary_edge_face_pairs = physical_group.second->GetEdgeFace();
+			for (auto& boundary_edge_face_pair : boundary_edge_face_pairs)
 			{
-				auto boundary_edge_id = boundary_edge->GetId();
-				boundary_edge->GetEdgeData(E_TEMPERATURE) = 100;
+				boundary_edge_face_pair.first->GetEdgeData(E_TEMPERATURE) = 100;
 			}
 		}
 
 		if (boundary_condition.GetType() == OUTFLOW)
 		{
-			auto boundary_edges = physical_group.second->GetEdges();
-			for (auto boundary_edge : boundary_edges)
+			auto& boundary_edge_face_pairs = physical_group.second->GetEdgeFace();
+			for (auto& boundary_edge_face_pair : boundary_edge_face_pairs)
 			{
-				auto boundary_edge_id = boundary_edge->GetId();
-				boundary_edge->GetEdgeData(E_TEMPERATURE) = 200;
+				boundary_edge_face_pair.first->GetEdgeData(E_TEMPERATURE) = 200;
 			}
 		}
 	}
@@ -927,7 +918,7 @@ void Solution::TestFeature()
 		for (auto& half_edge : half_edges)
 		{
 			auto edge_id = half_edge->GetParentEdge()->GetId();
-			mass_flux += half_edge->GetParentEdge()->GetEdgeData(E_MASS_FLUX_S)* double(half_edge->GDirectionCoefficient()) / 2;
+			mass_flux += half_edge->GetParentEdge()->GetEdgeData(E_MASS_FLUX_S)* double(half_edge->GetDirectionCoefficient()) / 2;
 		}
 		std::cout << it->GetArea() << " ------- " << mass_flux << std::endl;
 		myfile << mass_flux << "\n";
@@ -998,8 +989,8 @@ void Solution::UpdateFlux(const int& e_vel_x_data_id, const int& e_vel_y_data_id
 
 	for (auto edge : m_geometry.GetEdgeList())
 	{
-		edge->GetEdgeData(e_flux_data_id) = m_parameter.density * edge->GetEdgeData(e_vel_x_data_id) * edge->GetHalfEdge(0)->GeAreaVector().GetDx() +
-			                                m_parameter.density * edge->GetEdgeData(e_vel_y_data_id) * edge->GetHalfEdge(0)->GeAreaVector().GetDy();
+		edge->GetEdgeData(e_flux_data_id) = m_parameter.density * edge->GetEdgeData(e_vel_x_data_id) * edge->GetHalfEdge(0)->GetAreaVector().GetDx() +
+			                                m_parameter.density * edge->GetEdgeData(e_vel_y_data_id) * edge->GetHalfEdge(0)->GetAreaVector().GetDy();
 
 	}
 
@@ -1011,39 +1002,39 @@ void Solution::UpdateFlux(const int& e_vel_x_data_id, const int& e_vel_y_data_id
 
 		if (boundary_condition.GetType() == INFLOW)
 		{
-			auto& boundary_edges = physical_group.second->GetEdges();
-			for (auto boundary_edge : boundary_edges)
+			auto& boundary_edge_face_pairs = physical_group.second->GetEdgeFace();
+			for (auto& boundary_edge_face_pair : boundary_edge_face_pairs)
 			{
 				HalfEdge* half_edge = nullptr;
-				if (boundary_edge->GetHalfEdge(0)->GetFace() == nullptr)
+				if (boundary_edge_face_pair.first->GetHalfEdge(0)->GetFace() == nullptr)
 				{
-					half_edge = boundary_edge->GetHalfEdge(1);
+					half_edge = boundary_edge_face_pair.first->GetHalfEdge(1);
 				}
 				else
 				{
-					half_edge = boundary_edge->GetHalfEdge(0);
+					half_edge = boundary_edge_face_pair.first->GetHalfEdge(0);
 				}
 
-				double value_u = -boundary_condition.GetValue() * half_edge->GeAreaVector()[0];
-				double value_v = -boundary_condition.GetValue() * half_edge->GeAreaVector()[1];
+				double value_u = -boundary_condition.GetValue() * half_edge->GetAreaVector()[0];
+				double value_v = -boundary_condition.GetValue() * half_edge->GetAreaVector()[1];
 
-				half_edge->GetParentEdge()->GetEdgeData(e_flux_data_id) = m_parameter.density * value_u * half_edge->GeAreaVector().GetDx() +
-					                                                      m_parameter.density * value_v * half_edge->GeAreaVector().GetDy();
+				half_edge->GetParentEdge()->GetEdgeData(e_flux_data_id) = m_parameter.density * value_u * half_edge->GetAreaVector().GetDx() +
+					                                                      m_parameter.density * value_v * half_edge->GetAreaVector().GetDy();
 			}
 		}
 		if (boundary_condition.GetType() == OUTFLOW)
 		{
-			auto& boundary_edges = physical_group.second->GetEdges();
-			for (auto boundary_edge : boundary_edges)
+			auto& boundary_edge_face_pairs = physical_group.second->GetEdgeFace();
+			for (auto& boundary_edge_face_pair : boundary_edge_face_pairs)
 			{
 				HalfEdge* half_edge = nullptr;
-				if (boundary_edge->GetHalfEdge(0)->GetFace() == nullptr)
+				if (boundary_edge_face_pair.first->GetHalfEdge(0)->GetFace() == nullptr)
 				{
-					half_edge = boundary_edge->GetHalfEdge(1);
+					half_edge = boundary_edge_face_pair.first->GetHalfEdge(1);
 				}
 				else
 				{
-					half_edge = boundary_edge->GetHalfEdge(0);
+					half_edge = boundary_edge_face_pair.first->GetHalfEdge(0);
 				}
 
 				Face* face = half_edge->GetFace();
@@ -1051,24 +1042,24 @@ void Solution::UpdateFlux(const int& e_vel_x_data_id, const int& e_vel_y_data_id
 				double value_u = face->GetFaceData(e_vel_x_data_id);
 				double value_v = face->GetFaceData(e_vel_y_data_id);
 
-				half_edge->GetParentEdge()->GetEdgeData(e_flux_data_id) = m_parameter.density * value_u * half_edge->GeAreaVector().GetDx() +
-					                                                    m_parameter.density * value_v * half_edge->GeAreaVector().GetDy();
+				half_edge->GetParentEdge()->GetEdgeData(e_flux_data_id) = m_parameter.density * value_u * half_edge->GetAreaVector().GetDx() +
+		                                                                  m_parameter.density * value_v * half_edge->GetAreaVector().GetDy();
 			}
 		}
 
 		if (boundary_condition.GetType() == WALL)
 		{
-			auto& boundary_edges = physical_group.second->GetEdges();
-			for (auto boundary_edge : boundary_edges)
+			auto& boundary_edge_face_pairs = physical_group.second->GetEdgeFace();
+			for (auto& boundary_edge_face_pair : boundary_edge_face_pairs)
 			{
 				HalfEdge* half_edge = nullptr;
-				if (boundary_edge->GetHalfEdge(0)->GetFace() == nullptr)
+				if (boundary_edge_face_pair.first->GetHalfEdge(0)->GetFace() == nullptr)
 				{
-					half_edge = boundary_edge->GetHalfEdge(1);
+					half_edge = boundary_edge_face_pair.first->GetHalfEdge(1);
 				}
 				else
 				{
-					half_edge = boundary_edge->GetHalfEdge(0);
+					half_edge = boundary_edge_face_pair.first->GetHalfEdge(0);
 				}
 
 				half_edge->GetParentEdge()->GetEdgeData(e_flux_data_id) = 0.0;
@@ -1122,10 +1113,10 @@ void Solution::SetEdgeData(const int& data_id, const int& value)
 		auto boundary_condition = physical_group.second->GetBoundaryCondition();
 		if (boundary_condition.GetType() == WALL || boundary_condition.GetType() == INFLOW)
 		{
-			auto& boundary_edges = physical_group.second->GetEdges();
-			for (auto boundary_edge : boundary_edges)
+			auto& boundary_edge_face_pairs = physical_group.second->GetEdgeFace();
+			for (auto& boundary_edge_face_pair : boundary_edge_face_pairs)
 			{
-				boundary_edge->GetEdgeData(data_id) = value;
+				boundary_edge_face_pair.first->GetEdgeData(data_id) = value;
 			}
 		}
 	}
@@ -1144,30 +1135,26 @@ void Solution::SetFaceData(const int& data_id, const int& value)
 void Solution::ConstructMomentumMatrix()
 {
 	auto& faces = m_geometry.GetFaceList();
+	auto& edges = m_geometry.GetEdgeList();
 	m_momentum.SetSize(static_cast<LIS_INT>(faces.size()));
+
 	//setting momentum mat
 	//----------------------------------------------------------------------------------------
-	for (auto face : faces)
+
+	SetFaceData(F_CENTRAL_TERM, 0);
+
+	Face* face[2] = { nullptr,nullptr };
+	for (auto edge : edges)
 	{
-		auto cell_volume = face->GetArea();
-		face->GetFaceData(F_CENTRAL_TERM) = m_parameter.density * cell_volume / m_parameter.dt;
-		auto diagonal_term = 0.0;
-		auto& half_edges = face->GetHalfEdge();
+		face[0] = edge->GetHalfEdge(0)->GetFace();
+		face[1] = edge->GetHalfEdge(1)->GetFace();
 
-		for (auto half_edge : half_edges)
-		{
-			auto neighbour_half_edge = half_edge->GetNeighbourHalfEdge();
-			auto neighbour_face = neighbour_half_edge->GetFace();
+		auto coefficient = m_parameter.viscosity * edge->GetAreaByDistance();
+		face[0]->GetFaceData(F_CENTRAL_TERM) += coefficient;
+		face[1]->GetFaceData(F_CENTRAL_TERM) += coefficient;
 
-			if (neighbour_face != nullptr)
-			{
-				auto coefficient = m_parameter.viscosity * half_edge->GetParentEdge()->GetAreaByDistance();
-				face->GetFaceData(F_CENTRAL_TERM) += coefficient;
-				diagonal_term = -coefficient;
-				m_momentum.MatrixSetValue(face->GetId(), neighbour_face->GetId(), diagonal_term);
-			}
-		}
-		m_momentum.MatrixSetValue(face->GetId(), face->GetId(), face->GetFaceData(F_CENTRAL_TERM));
+		m_momentum.MatrixSetValue(face[0]->GetId(), face[1]->GetId(), -coefficient);
+		m_momentum.MatrixSetValue(face[1]->GetId(), face[0]->GetId(), -coefficient);
 	}
 
 	auto& physical_groups = m_geometry.GetPhysicalGroup();
@@ -1176,56 +1163,121 @@ void Solution::ConstructMomentumMatrix()
 		auto boundary_condition = physical_group.second->GetBoundaryCondition();
 		if (boundary_condition.GetType() == WALL || boundary_condition.GetType() == INFLOW)
 		{
-			auto& boundary_edges = physical_group.second->GetEdges();
-			for (auto boundary_edge : boundary_edges)
+			auto& boundary_edge_face_pairs = physical_group.second->GetEdgeFace();
+			for (auto& boundary_edge_face_pair : boundary_edge_face_pairs)
 			{
-				Face* face = nullptr;
-				HalfEdge* half_edge = nullptr;
-				if (boundary_edge->GetHalfEdge(0)->GetFace() == nullptr)
-				{
-					half_edge = boundary_edge->GetHalfEdge(1);
-					face = half_edge->GetFace();
-				}
-				else
-				{
-					half_edge = boundary_edge->GetHalfEdge(0);
-					face = half_edge->GetFace();
-				}
-
-				auto coefficient = m_parameter.viscosity * half_edge->GetParentEdge()->GetAreaByDistance();
-				face->GetFaceData(F_CENTRAL_TERM) += coefficient;
-				m_momentum.MatrixSetValue(face->GetId(), face->GetId(), face->GetFaceData(F_CENTRAL_TERM));
+				auto coefficient = m_parameter.viscosity * boundary_edge_face_pair.first->GetAreaByDistance();
+				boundary_edge_face_pair.second->GetFaceData(F_CENTRAL_TERM) += coefficient;
 			}
 		}
-
+		/*
 		if (boundary_condition.GetType() == OUTFLOW)
 		{
-			auto& boundary_edges = physical_group.second->GetEdges();
-			for (auto boundary_edge : boundary_edges)
+			auto& boundary_edge_face_pairs = physical_group.second->GetEdgeFace();
+			for (auto& boundary_edge_face_pair : boundary_edge_face_pairs)
 			{
-				Face* face = nullptr;
-				HalfEdge* half_edge = nullptr;
-				if (boundary_edge->GetHalfEdge(0)->GetFace() == nullptr)
-				{
-					half_edge = boundary_edge->GetHalfEdge(1);
-					face = half_edge->GetFace();
-				}
-				else
-				{
-					half_edge = boundary_edge->GetHalfEdge(0);
-					face = half_edge->GetFace();
-				}
-				face->GetFaceData(F_CENTRAL_TERM) += half_edge->GetParentEdge()->GetEdgeData(E_MASS_FLUX_S);
+				boundary_edge_face_pair.second->GetFaceData(F_CENTRAL_TERM) += boundary_edge_face_pair.first->GetEdgeData(E_MASS_FLUX_S);
+			}
+		}
+		*/
+	}
+
+	for (auto& face : faces)
+	{
+		face->GetFaceData(F_CENTRAL_TERM) += m_parameter.density * face->GetArea() / m_parameter.dt;
+		m_momentum.MatrixSetValue(face->GetId(), face->GetId(), face->GetFaceData(F_CENTRAL_TERM));
+	}
+
+	m_momentum.PrepareMatrix();
+	//end setting momentum mat
+	//----------------------------------------------------------------------------------------
+}
+
+void Solution::ConstructPressureMatrix()
+{
+	auto& faces = m_geometry.GetFaceList();
+	auto& edges = m_geometry.GetEdgeList();
+	m_pressure.SetSize(static_cast<LIS_INT>(faces.size()));
+
+	//setting momentum mat
+	//----------------------------------------------------------------------------------------
+
+	SetFaceData(F_CENTRAL_TERM, 0);
+
+	Face* face[2] = { nullptr,nullptr };
+	for (auto edge : edges)
+	{
+		face[0] = edge->GetHalfEdge(0)->GetFace();
+		face[1] = edge->GetHalfEdge(1)->GetFace();
+
+		auto coefficient = m_parameter.dt * edge->GetAreaByDistance();
+		face[0]->GetFaceData(F_CENTRAL_TERM) -= coefficient;
+		face[1]->GetFaceData(F_CENTRAL_TERM) -= coefficient;
+
+		m_pressure.MatrixSetValue(face[0]->GetId(), face[1]->GetId(), coefficient);
+		m_pressure.MatrixSetValue(face[1]->GetId(), face[0]->GetId(), coefficient);
+	}
+
+	for (auto& face : faces)
+	{
+		face->GetFaceData(F_CENTRAL_TERM) += m_parameter.density * face->GetArea() / m_parameter.dt;
+		m_pressure.MatrixSetValue(face->GetId(), face->GetId(), face->GetFaceData(F_CENTRAL_TERM));
+	}
+
+	m_pressure.PrepareMatrix();
+	//end setting momentum mat
+	//----------------------------------------------------------------------------------------
+}
+
+void Solution::ConstructMomentumVector(const int& face_data_id, const int& edge_data_id)
+{
+	auto& faces = m_geometry.GetFaceList();
+
+	for (auto& face : faces)
+	{
+		auto term1 = face->GetFaceData(face_data_id) * m_parameter.density * face->GetArea() / m_parameter.dt;
+		auto term2 = 0.0;
+		for (auto half_edge : face->GetHalfEdge())
+		{
+			term2 -= half_edge->GetDirectionCoefficient() * half_edge->GetParentEdge()->GetEdgeData(E_MASS_FLUX_S)* half_edge->GetParentEdge()->GetEdgeData(edge_data_id);
+		}
+
+		m_momentum.BVectorSetValue(face->GetId(), term1 + term2);
+	}
+
+	auto& physical_groups = m_geometry.GetPhysicalGroup();
+	for (auto& physical_group : physical_groups)
+	{
+		auto boundary_condition = physical_group.second->GetBoundaryCondition();
+		if (boundary_condition.GetType() == INFLOW)
+		{
+			auto& boundary_edge_face_pairs = physical_group.second->GetEdgeFace();
+			for (auto& boundary_edge_face_pair : boundary_edge_face_pairs)
+			{
+				auto coefficient = m_parameter.viscosity * boundary_edge_face_pair.first->GetAreaByDistance();
+				auto new_value = m_momentum.BVectorGetValue(boundary_edge_face_pair.second->GetId())+ boundary_edge_face_pair.first->GetEdgeData(edge_data_id)*coefficient;
+				m_momentum.BVectorSetValue(boundary_edge_face_pair.second->GetId(), new_value);
 			}
 		}
 	}
-	m_momentum.Prepare();
-	//end setting momentum mat
-	//----------------------------------------------------------------------------------------
 
+	m_momentum.PrepareBVector();
 }
+void Solution::ConstructPressureVector(const int& face_data_id)
+{
+	auto& faces = m_geometry.GetFaceList();
+	for (auto& face : faces)
+	{
+		double cell_flux = 0.0;
+		for (auto half_edge : face->GetHalfEdge())
+		{
+			cell_flux += half_edge->GetDirectionCoefficient() * half_edge->GetParentEdge()->GetEdgeData(face_data_id);
+		}
+		m_pressure.BVectorSetValue(face->GetId(), cell_flux);
+	}
 
-
+	m_pressure.PrepareBVector();
+}
 void Solution::Solve()
 {
 
@@ -1248,37 +1300,85 @@ void Solution::Solve()
 
 		if (boundary_conditon.GetType() == INFLOW)
 		{
-			auto& bundary_half_edges = physical_group.second->GetEdges();
-			for (auto edge : bundary_half_edges)
+			auto& boundary_edge_face_pairs = physical_group.second->GetEdgeFace();
+			for (auto& boundary_edge_face_pair : boundary_edge_face_pairs)
 			{
-				edge->GetEdgeData(E_VEL_X) = boundary_conditon.GetValue();
+				boundary_edge_face_pair.first->GetEdgeData(E_VEL_X) = boundary_conditon.GetValue();
 				HalfEdge* half_edge = nullptr;
-				if (edge->GetHalfEdge(0)->GetFace() == nullptr)
+				if (boundary_edge_face_pair.first->GetHalfEdge(0)->GetFace() == nullptr)
 				{
-					half_edge = edge->GetHalfEdge(1);
+					half_edge = boundary_edge_face_pair.first->GetHalfEdge(1);
 				}
 				else
 				{
-					half_edge = edge->GetHalfEdge(0);
+					half_edge = boundary_edge_face_pair.first->GetHalfEdge(0);
 				}
-				edge->GetEdgeData(E_MASS_FLUX) = -boundary_conditon.GetValue()* half_edge->GeAreaVector()[0];
+				boundary_edge_face_pair.first->GetEdgeData(E_MASS_FLUX) = -boundary_conditon.GetValue() * half_edge->GetAreaVector()[0];
+				boundary_edge_face_pair.first->GetEdgeData(E_VEL_X) = -boundary_conditon.GetValue() * (half_edge->GetAreaVector().Unit().GetDx());
+				boundary_edge_face_pair.first->GetEdgeData(E_VEL_Y) = -boundary_conditon.GetValue() * (half_edge->GetAreaVector().Unit().GetDy());
 			}
 		}
 	}
+
+	CopyEdgeData(E_VEL_X, E_VEL_XS);
+	CopyEdgeData(E_VEL_Y, E_VEL_YS);
+
 	//----------------------------------------------------------------------------------
-	WriteSolution("newOutput1");
+	WriteSolution("newOutputTEST1");
 
-
-
+	ConstructMomentumMatrix();
+	ConstructPressureMatrix();
 
 	//step 1
 
 	CopyEdgeData(E_MASS_FLUX, E_MASS_FLUX_S);
 
 	//step 2
+	//setting b vec
+	for (auto it = 0; it < 5; ++it)
+	{
+		std::cout << "it: " << it << std::endl;
+		ConstructMomentumVector(F_VEL_X, E_VEL_X);
+		auto& res_xs = m_momentum.GetResult();
 
+		double temp_val;
+		for (auto face : m_geometry.GetFaceList())
+		{
+			lis_vector_get_value(res_xs, face->GetId(), &temp_val);
+			face->GetFaceData(F_VEL_XS) = temp_val;
+		}
 
+		//WriteSolution("newOutputTEST2");
 
+		ConstructMomentumVector(F_VEL_Y, E_VEL_Y);
+		auto& res_ys = m_momentum.GetResult();
 
+		for (auto face : m_geometry.GetFaceList())
+		{
+			lis_vector_get_value(res_ys, face->GetId(), &temp_val);
+			face->GetFaceData(F_VEL_YS) = temp_val;
+		}
 
+		//WriteSolution("newOutputTEST3");
+
+		UpdateFlux(E_VEL_XS, E_VEL_YS, E_MASS_FLUX_S);
+
+		ConstructPressureVector(E_MASS_FLUX_S);
+
+		auto& res_ps = m_pressure.GetResult();
+
+		for (auto face : m_geometry.GetFaceList())
+		{
+			lis_vector_get_value(res_ps, face->GetId(), &temp_val);
+			face->GetFaceData(F_PRESSURE_S) = temp_val;
+		}
+
+		for (auto edge : m_geometry.GetEdgeList())
+		{
+			edge->GetEdgeData(E_MASS_FLUX_S) -= m_parameter.dt * edge->GetAreaByDistance() * (edge->GetHalfEdge(1)->GetFace()->GetFaceData(F_PRESSURE_S) - edge->GetHalfEdge(1)->GetFace()->GetFaceData(F_PRESSURE_S));
+		}
+
+		//WriteSolution("newOutputTEST4");
+	}
+	WriteSolution("newOutputTEST4");
 }

@@ -126,7 +126,7 @@ Vector HalfEdge::GetNormal()
 	return  GetEdgeVector().Unit() ^ GetFace()->GetNormalVector().Unit();
 }
 
-Vector& HalfEdge::GeAreaVector()
+Vector& HalfEdge::GetAreaVector()
 {
 	return m_area_vector;
 }
@@ -136,7 +136,7 @@ void HalfEdge::SetDirectionCoefficient(const int& d)
 	m_direction_coefficient = d;
 }
 
-int HalfEdge::GDirectionCoefficient()
+int HalfEdge::GetDirectionCoefficient()
 {
 	return m_direction_coefficient;
 }

@@ -38,9 +38,12 @@ public:
 	void SetEdgeData(const int& data_id, const int& value);
 	void SetFaceData(const int& data_id, const int& value);
 
-
 	void Solve();
 	void ConstructMomentumMatrix();
+	void ConstructPressureMatrix();
+	void ConstructMomentumVector(const int&, const int&);
+	void ConstructPressureVector(const int&);
+
 private:
 	Geometry m_geometry;
 	Parameter m_parameter;

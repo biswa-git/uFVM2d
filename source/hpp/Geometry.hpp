@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <vector>
 #include <map>
+#include <unordered_map>
 
 #ifdef STL_READER_NO_EXCEPTIONS
 #define STL_READER_THROW(msg) return false;
